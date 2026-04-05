@@ -89,6 +89,12 @@ void searchFiles(const char *path, long long minSizeBytes, Statistics *stats, FI
 
     if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
     {
+      // NOVA VERIFICAÇÃO: Pula atalhos e links simbólicos para evitar loop infinito
+      if (findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+      {
+        continue;
+      }
+      
       // É um diretório, busca recursivamente
       searchFiles(filePath, minSizeBytes, stats, outputFile);
     }
@@ -156,13 +162,28 @@ int main()
   long long minSizeGB = getMinSizeGB();
   long long minSizeBytes = minSizeGB * GB_TO_BYTES;
 
-  printf("\nIniciando busca a partir de C:\\ por arquivos com %I64d GB ou mais...\n", minSizeGB);
+  // Obtém todas as unidades de disco ativas
+  DWORD drives = GetLogicalDrives();
+  char drivePath[4] = "X:\\";
+
+  printf("\nIniciando busca em todas as unidades de disco por arquivos com %I64d GB ou mais...\n", minSizeGB);
   printf("=====================================\n");
 
   FILE *outputFile = NULL;
 
-  // Busca recursiva
-  searchFiles("C:\\", minSizeBytes, &stats, outputFile);
+  // Itera sobre todas as 26 possíveis letras de unidade (A-Z)
+  for (int i = 0; i < 26; i++)
+  {
+    // Verifica se a unidade i está ativa (bit i está setado)
+    if (drives & (1 << i))
+    {
+      drivePath[0] = 'A' + i;
+      printf("Buscando em %s\n", drivePath);
+      
+      // Busca recursiva na unidade
+      searchFiles(drivePath, minSizeBytes, &stats, outputFile);
+    }
+  }
 
   // Exibe estatísticas
   displayStatistics(&stats);
