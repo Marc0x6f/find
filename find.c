@@ -130,6 +130,20 @@ void searchFiles(const char *path, long long minSizeBytes, Statistics *stats, FI
   FindClose(findHandle);
 }
 
+// Verifica se o terminal deve ser mantido aberto (caso de clique duplo no Explorer)
+void handleTerminalPersistence()
+{
+  DWORD processList[2];
+  DWORD count = GetConsoleProcessList(processList, 2);
+
+  // Se houver apenas 1 processo na lista, o programa foi iniciado diretamente (sem shell persistente)
+  if (count == 1)
+  {
+    printf("\nBusca concluida. Pressione ENTER para sair...");
+    getchar();
+  }
+}
+
 // Exibe estatísticas finais
 void displayStatistics(Statistics *stats)
 {
@@ -187,6 +201,9 @@ int main()
 
   // Exibe estatísticas
   displayStatistics(&stats);
+
+  // Mantém o terminal aberto se necessário
+  handleTerminalPersistence();
 
   return 0;
 }
